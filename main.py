@@ -4,11 +4,12 @@ import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
 import io
+import os
 from fastapi.middleware.cors import CORSMiddleware
 
-# Check if CUDA (GPU) is available
+# **Check if CUDA (GPU) is available**
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"🚀 Using device: {device}")
+print(f" Using device: {device}")
 
 # **Class Labels (Must match training)**
 class_names = [
@@ -35,9 +36,9 @@ def load_model():
         model.load_state_dict(torch.load("roman_emperors_FINAL.pth", map_location=device))
         model.to(device)
         model.eval()
-        print("✅ Model loaded successfully")
+        print("Model loaded successfully")
     except Exception as e:
-        print(f"❌ Model loading failed: {str(e)}")
+        print(f" Model loading failed: {str(e)}")
         raise RuntimeError("Failed to load model")
     return model
 
@@ -62,10 +63,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# **Root Endpoint to Fix 404 Errors**
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the Ancient Coin Classifier API!"}
+
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
     try:
-        print(f"📂 Received file: {file.filename}")
+        print(f"Received file: {file.filename}")
 
         # **Read and preprocess image**
         image_data = await file.read()
@@ -91,8 +97,7 @@ async def predict(file: UploadFile = File(...)):
         # **Check if Augustus (Caesar) is identified with high confidence**
         for result in top3_results:
             if result["emperor"] == "Augustus" and result["confidence"] > 90:
-                # If Augustus (Caesar) is above 90%, return only this result
-                top3_results = [result]
+                top3_results = [result]  # If Augustus (Caesar) is above 90%, return only this result
                 break
 
         # **Assign colors based on confidence levels**
@@ -104,22 +109,19 @@ async def predict(file: UploadFile = File(...)):
             else:
                 result["color"] = "red"  # Low confidence
 
-        # **Return modified results**
-        print(f"✅ Prediction: {top3_results}")
+        print(f"Prediction: {top3_results}")
         return {"predictions": top3_results}
 
     except HTTPException as e:
-        print(f"⚠️ Error: {e.detail}")
+        print(f" Error: {e.detail}")
         raise e  # Re-raise FastAPI exceptions
 
     except Exception as e:
-        print(f"❌ Unexpected Error: {str(e)}")
+        print(f" Unexpected Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-import os
-
+# **Ensure the Correct Port is Used on Render**
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))  # Default to 8000 if PORT is not set
+    port = int(os.getenv("PORT", 8000))  # Read PORT from environment variables
     uvicorn.run(app, host="0.0.0.0", port=port)
-
