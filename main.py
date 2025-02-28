@@ -116,7 +116,10 @@ async def predict(file: UploadFile = File(...)):
         print(f"❌ Unexpected Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-# **Run the API**
+import os
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))  # Default to 8000 if PORT is not set
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
