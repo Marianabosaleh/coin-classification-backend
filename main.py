@@ -125,7 +125,9 @@ async def predict(file: UploadFile = File(...)):
 # Ensure the Correct Port is Used on Render
 import os
 
+import os
+
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))  # Render assigns a dynamic port
+    port = int(os.getenv("PORT", 8000))  
     uvicorn.run(app, host="0.0.0.0", port=port)
