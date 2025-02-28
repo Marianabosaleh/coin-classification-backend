@@ -1,18 +1,17 @@
-import os
-import uvicorn
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from PIL import Image, UnidentifiedImageError
 import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
 import io
+import os
 from fastapi.middleware.cors import CORSMiddleware
 
-# Check if CUDA (GPU) is available
+# **Check if CUDA (GPU) is available**
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"🚀 Using device: {device}")
 
-# Class Labels
+# **Class Labels (Must match training)**
 class_names = [
     "Vespasian", "Hadrian", "Trajan", "Antoninus", "Nerva", "Pertinax",
     "Alexander", "Vitellius", "Augustus", "Caligula", "Caracalla", "Claudius",
@@ -26,7 +25,7 @@ class_names = [
     "Severus II", "Gordian II AND I"
 ]
 
-# Load trained model
+# **Load trained model**
 def load_model():
     model = models.efficientnet_b3(weights=None)
     model.classifier[1] = torch.nn.Sequential(
@@ -45,17 +44,17 @@ def load_model():
 
 model = load_model()
 
-# Image Preprocessing
+# **Image Preprocessing**
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 ])
 
-# Create FastAPI app
+# **Create FastAPI app**
 app = FastAPI()
 
-# Enable CORS for React Frontend
+# **Enable CORS for React Frontend**
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "*"],
@@ -64,18 +63,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Root Endpoint to Fix 405 Method Not Allowed
+# **Root Endpoint to Fix 404 Errors**
 @app.get("/")
 async def root():
     return {"message": "Welcome to the Ancient Coin Classifier API!"}
 
-# Prediction Endpoint
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
     try:
         print(f"📂 Received file: {file.filename}")
 
-        # Read and preprocess image
+        # **Read and preprocess image**
         image_data = await file.read()
         try:
             image = Image.open(io.BytesIO(image_data)).convert("RGB")
@@ -84,25 +82,25 @@ async def predict(file: UploadFile = File(...)):
 
         image = transform(image).unsqueeze(0).to(device)
 
-        # Run model inference
+        # **Run model inference**
         with torch.no_grad():
             output = model(image)
             probabilities = torch.nn.functional.softmax(output[0], dim=0)
         
-        # Get top 3 predictions
+        # **Get top 3 predictions**
         top3_prob, top3_indices = torch.topk(probabilities, 3)
         top3_results = [
             {"emperor": class_names[idx.item()], "confidence": round(prob.item() * 100, 2)}
             for prob, idx in zip(top3_prob, top3_indices)
         ]
 
-        # Check if Augustus (Caesar) is identified with high confidence
+        # **Check if Augustus (Caesar) is identified with high confidence**
         for result in top3_results:
             if result["emperor"] == "Augustus" and result["confidence"] > 90:
                 top3_results = [result]  # If Augustus (Caesar) is above 90%, return only this result
                 break
 
-        # Assign colors based on confidence levels
+        # **Assign colors based on confidence levels**
         for result in top3_results:
             if result["confidence"] >= 90:
                 result["color"] = "green"  # High confidence
@@ -122,12 +120,8 @@ async def predict(file: UploadFile = File(...)):
         print(f"❌ Unexpected Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-# Ensure the Correct Port is Used on Render
-import os
-
-import os
-
+# **Ensure the Correct Port is Used on Render**
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))  
+    port = int(os.getenv("PORT", 8000))  # Read PORT from environment variables
     uvicorn.run(app, host="0.0.0.0", port=port)
