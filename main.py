@@ -120,8 +120,18 @@ async def predict(file: UploadFile = File(...)):
         print(f"❌ Unexpected Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-# **Ensure the Correct Port is Used on Render**
+import os
+
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))  # Read PORT from environment variables
+    port = int(os.getenv("PORT", 8000))
+
+    # Debugging print statement
+    print(f"🔍 Render assigned port: {port}")
+
+    # Force port 8000 if Render assigns the wrong one
+    if port != 8000:
+        print("⚠️ Render assigned an unexpected port! Forcing 8000.")
+        port = 8000
+
     uvicorn.run(app, host="0.0.0.0", port=port)
