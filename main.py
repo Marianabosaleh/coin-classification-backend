@@ -1,11 +1,11 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image, UnidentifiedImageError
 import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
 import io
 import os
-from fastapi.middleware.cors import CORSMiddleware
 
 # **Check if CUDA (GPU) is available**
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -57,13 +57,13 @@ app = FastAPI()
 # **Enable CORS for React Frontend**
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "*"],
+    allow_origins=["*"],  # ✅ Allow all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # ✅ Allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],  # ✅ Allow all headers
 )
 
-# **Root Endpoint to Fix 404 Errors**
+# **Root Endpoint**
 @app.get("/")
 async def root():
     return {"message": "Welcome to the Ancient Coin Classifier API!"}
@@ -120,19 +120,10 @@ async def predict(file: UploadFile = File(...)):
         print(f"❌ Unexpected Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-import os
 
-import uvicorn
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/")
-async def root():
-    return {"message": "Welcome to the Ancient Coin Classifier API!"}
-
+# **Run the application**
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8080))  # Use 8080 for Google Cloud Run
+    import uvicorn
+    port = int(os.getenv("PORT", 8080))  # ✅ Use 8080 for Google Cloud Run
     print(f"🚀 Running on port {port}")
-
-    uvicorn.run(app, host="0.0.0.0", port=port)  # ✅ Fix: Use "0.0.0.0"
+    uvicorn.run(app, host="0.0.0.0", port=port)
