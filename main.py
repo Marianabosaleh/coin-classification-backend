@@ -122,10 +122,17 @@ async def predict(file: UploadFile = File(...)):
 
 import os
 
+import uvicorn
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the Ancient Coin Classifier API!"}
+
 if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 8080))  # Ensure it uses 8080 for Google Cloud Run
-    print(f"Cloud Run assigned port: {port}")
+    port = int(os.getenv("PORT", 8080))  # Use 8080 for Google Cloud Run
+    print(f"🚀 Running on port {port}")
 
-    uvicorn.run(app, host="0.0.0.0", port=port)
-
+    uvicorn.run(app, host="0.0.0.0", port=port)  # ✅ Fix: Use "0.0.0.0"

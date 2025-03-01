@@ -17,5 +17,5 @@ EXPOSE 8080
 # Set environment variable for Google Cloud Run
 ENV PORT=8080
 
-# Run the FastAPI application
+# Run the FastAPI application with correct host & port
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
